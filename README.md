@@ -1,6 +1,8 @@
 # BackEnd
 
 Repositório criado para **estudos de Back-End**, com foco em lógica, estrutura de dados e fluxo de aplicações em Python.
+How to run:
+python desafio.py
 
 ## 📌 Objetivo
 Este projeto tem como objetivo praticar conceitos fundamentais de back-end, como:
