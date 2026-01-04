@@ -45,4 +45,5 @@ Não é um sistema de produção — é um **ambiente de aprendizado**.
 ---
 
 ## 📚 Status
-🧪 Em desenvo
+🧪 Finalizado
+
