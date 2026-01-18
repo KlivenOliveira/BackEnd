@@ -1,3 +1,9 @@
+from datetime import datetime
+
+def agora():
+    return datetime.now()
+
+
 menu = """
 Clientes
 [d] Depositar
@@ -12,6 +18,8 @@ Função exclusiva adm
 [q] Sair
 
 => """
+
+transitions = []
 user = ''
 saldo = 0
 contas = []
@@ -25,16 +33,46 @@ numero_conta_sequencial = 1
 cpf_logado = None
 
 
+def gerador_transacoes(transacoes, tipo=None):
+    for transacao in transacoes:
+        if tipo is None or transacao["type"] == tipo:
+            yield transacao
+
+
+
+def bankLog(funcao):
+    def envelope(*args, **kwargs):
+        data_hora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        print(f"[LOG] {data_hora} | Transação: {funcao.__name__}")
+        return funcao(*args, **kwargs)
+    return envelope
+
+
+def contar_depositos():
+    return sum(1 for _ in gerador_transacoes(transitions, "deposito"))
+
+def contar_saques():
+    return sum(1 for _ in gerador_transacoes(transitions, "saque"))
+
+
+    
+@bankLog
 def depositar(saldo,extrato,valor):
        if valor > 0:
             saldo += valor
             extrato += f"Depósito: R$ {valor:.2f}\n"
+            transitions.append({
+            "type": "deposito",
+            "value": valor,
+            "date": agora()
+          })
+            print(f"Depósitos realizados: {contar_depositos()}")
        else:
            print('Operacao falhuo! Valor informado é invalido')
 
        return saldo, extrato
         
-
+@bankLog
 def saque(*,saldo,valor,extrato,numero_saques):
         
         excedeu_saldo = valor > saldo
@@ -55,7 +93,12 @@ def saque(*,saldo,valor,extrato,numero_saques):
         elif valor > 0:
             saldo -= valor
             extrato += f"Saque: R$ {valor:.2f}\n"
-            numero_saques += 1
+            transitions.append({
+            "type": "saque",
+            "value": valor,
+            "date": agora()
+          })
+            print(f"saques realizados: {contar_saques()}")
 
         else:
             print("Operação falhou! O valor informado é inválido.")
@@ -63,6 +106,25 @@ def saque(*,saldo,valor,extrato,numero_saques):
 
         return saldo , extrato , numero_saques
 
+class MeuIterador:
+        def __init__(self, contas):
+            self.conta = contas
+            self.contador = 0
+
+        def __iter__(self):
+            return self
+        
+        def __next__(self):
+          try:
+             contas = self.conta[self.contador]
+             self.contador += 1
+             return contas
+          except IndexError:
+            raise StopIteration
+
+
+            
+    
 def visualizarHistorico(saldo,sessao,*,extrato):
         print("\n================ EXTRATO ================")
         print("\n================ Usuario ================")
@@ -76,6 +138,8 @@ def visualizar_dados():
     if not usuarios:
         print("Nenhuma conta cadastrada")
     else:
+
+
         print("\n======= USUÁRIOS =======")
         for cpf, dados in usuarios.items():
             print(f"CPF: {cpf}")
@@ -86,11 +150,12 @@ def visualizar_dados():
             print("------------------------")
 
         print("\n======= CONTAS =======")
-        for conta in contas:
-            print(f"Agência: {conta['agencia']} | Conta: {conta['numero']} | CPF: {conta['cpf']}")
-
+        for conta in MeuIterador(contas):
+         print(f"Agência: {conta['agencia']} | Conta: {conta['numero']} | CPF: {conta['cpf']} |SALDO:{saldo} ")
+        # for conta in contas:
+        #     print(f"Agência: {conta['agencia']} | Conta: {conta['numero']} | CPF: {conta['cpf']}")
      
-
+@bankLog
 def createUser(usuarios):
     print("\n================ Criacao de usuario ================")
 
@@ -120,7 +185,7 @@ def createUser(usuarios):
 
     print("Usuário e conta criados com sucesso!")
     return usuarios[cpf]
-
+@bankLog
 def createAccount(cpf):
     global numero_conta_sequencial
 
@@ -137,7 +202,7 @@ def createAccount(cpf):
     return conta["numero"]
 
 
-
+@bankLog
 def login():
      global cpf_logado
      print("================LOGIN================")
@@ -151,7 +216,7 @@ def login():
      else:
         print(f"o CPF:{cpf} não foi encontrado em nossos sistemas, direcionando para sistema de cadastros.")
         createUser(usuarios) 
-        print(f"bem vindo {usuarios[cpf]['nome']}")
+        # print(f"bem vindo {usuarios[cpf]['nome']}")
      
 
      cpf_logado = cpf
